@@ -19,12 +19,12 @@ provider "kubernetes" {
 
 // https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/scaleway.md
 // https://particule.io/blog/scaleway-externaldns/
-resource "kubernetes_deployment" "_90dy_external_dns" {
-  count      = var.TARGET == "scaleway" ? 1 : 0
-  depends_on = [kubernetes_namespace._90dy_namespace]
+resource "kubernetes_deployment" "external_dns" {
+  count      = var.PROVIDER == "scaleway" ? 1 : 0
+  depends_on = [kubernetes_namespace.default_namespace]
 
   metadata {
-    namespace = "90dy"
+    namespace = "default"
     name      = "external-dns"
   }
 
@@ -43,7 +43,7 @@ resource "kubernetes_deployment" "_90dy_external_dns" {
     }
     template {
       metadata {
-        namespace = "90dy"
+        namespace = "default"
         labels = {
           name = "external-dns"
         }
@@ -56,9 +56,9 @@ resource "kubernetes_deployment" "_90dy_external_dns" {
           image = "k8s.gcr.io/external-dns/external-dns:v0.7.4"
           args = [
             "--source=service",
-            "--domain-filter=kube.90dy.me",
+            "--domain-filter=kube.default.me",
             "--provider=scaleway",
-            "--namespace=90dy"
+            "--namespace=default"
           ]
           env {
             name  = "SCW_ACCESS_KEY"
@@ -79,20 +79,20 @@ resource "kubernetes_deployment" "_90dy_external_dns" {
 }
 
 // create service account external-dns
-resource "kubernetes_service_account" "_90dy_external_dns" {
-  count      = var.TARGET == "scaleway" ? 1 : 0
-  depends_on = [kubernetes_namespace._90dy_namespace]
+resource "kubernetes_service_account" "external_dns" {
+  count      = var.PROVIDER == "scaleway" ? 1 : 0
+  depends_on = [kubernetes_namespace.default_namespace]
 
   metadata {
     name      = "external-dns"
-    namespace = "90dy"
+    namespace = "default"
   }
   automount_service_account_token = true
 }
 
 // create cluster role external-dns
-resource "kubernetes_cluster_role" "_90dy_external_dns" {
-  count = var.TARGET == "scaleway" ? 1 : 0
+resource "kubernetes_cluster_role" "external_dns" {
+  count = var.PROVIDER == "scaleway" ? 1 : 0
   metadata {
     name = "external-dns"
   }
@@ -115,9 +115,9 @@ resource "kubernetes_cluster_role" "_90dy_external_dns" {
 }
 
 // bind cluster role external-dns to service account external-dns
-resource "kubernetes_cluster_role_binding" "_90dy_external_dns" {
-  count      = var.TARGET == "scaleway" ? 1 : 0
-  depends_on = [kubernetes_namespace._90dy_namespace]
+resource "kubernetes_cluster_role_binding" "external_dns" {
+  count      = var.PROVIDER == "scaleway" ? 1 : 0
+  depends_on = [kubernetes_namespace.default_namespace]
 
   metadata {
     name = "external-dns"
@@ -130,6 +130,7 @@ resource "kubernetes_cluster_role_binding" "_90dy_external_dns" {
   subject {
     kind      = "ServiceAccount"
     name      = "external-dns"
-    namespace = "90dy"
+    namespace = "default"
   }
 }
+
