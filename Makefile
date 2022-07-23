@@ -1,18 +1,18 @@
 export SHELL := /bin/bash
 
-.ONESHELL:
-
-
 all: \
 	scaleway
 
 # cat_env = $(eval export $(shell sed -ne 's/ *#.*$$//; /./ s/=.*$$// p' .env.$1))
 
 # scaleway: $(eval export
-scw scaleway:
-	export $$(grep -v '[^\]#.*' .env.$@ | xargs)
-	terraform init
-	# terraform apply
+scaleway: export SHELL := $(shell grep '[^\s#].*' .env.scaleway | xargs) $(SHELL)
+scaleway: vars := $(shell grep '[^\s#].*' .env.scaleway | sed 's,=.*,,' | xargs)
+scaleway:
+	# terraform init
+	terraform apply $(shell grep '[^\s#].*' .env.scaleway | sed 's,^,-var ,' | xargs)
 
-inspect:
-	k9s --kubeconfig scaleway.k8s.yml
+inspect.scaleway: inspect.%:
+	k9s --kubeconfig $*.k8s.yml
+
+inspect: inspect.scaleway

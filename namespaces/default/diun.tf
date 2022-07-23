@@ -1,8 +1,9 @@
 
-resource "kubernetes_default_service_account" "diun" {
+resource "kubernetes_service_account" "diun" {
+  # depends_on = [kubernetes_namespace.default_namespace]
   metadata {
-    name      = "diun"
     namespace = "default"
+    name      = "diun"
   }
   automount_service_account_token = true
   image_pull_secret {
@@ -11,6 +12,7 @@ resource "kubernetes_default_service_account" "diun" {
 }
 
 resource "kubernetes_cluster_role" "diun" {
+  # depends_on = [kubernetes_namespace.default_namespace]
   metadata {
     name = "diun"
   }
@@ -22,6 +24,7 @@ resource "kubernetes_cluster_role" "diun" {
 }
 
 resource "kubernetes_cluster_role_binding" "diun" {
+  # depends_on = [kubernetes_namespace.default_namespace]
   metadata {
     name = "diun"
   }
@@ -38,6 +41,7 @@ resource "kubernetes_cluster_role_binding" "diun" {
 }
 
 resource "kubernetes_deployment" "diun" {
+  # depends_on = [kubernetes_namespace.default_namespace]
   metadata {
     namespace = "default"
     name      = "diun"
@@ -99,7 +103,7 @@ resource "kubernetes_deployment" "diun" {
         }
         volume {
           name = "data"
-          hostPath {
+          host_path {
             type = "Directory"
             path = "/data"
           }

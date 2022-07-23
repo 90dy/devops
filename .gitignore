@@ -2,3 +2,4 @@
 !*.secret
 .env.scaleway
 scaleway.k8s.yml
+providers/scaleway/kubeconfig.yml

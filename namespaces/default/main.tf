@@ -1,8 +1,8 @@
-resource "kubernetes_namespace" "default_namespace" {
-  metadata {
-    name = "default"
-  }
-}
+# resource "kubernetes_namespace" "default_namespace" {
+#   metadata {
+#     name = "default"
+#   }
+# }
 
 # resource "kubernetes_default_service_account" "default_service_account" {
 #   depends_on = [kubernetes_namespace.default_namespace]
