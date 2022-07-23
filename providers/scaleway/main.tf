@@ -4,7 +4,6 @@ variable "SCW_ACCESS_KEY" { type = string }
 variable "SCW_SECRET_KEY" { type = string }
 variable "SCW_DEFAULT_ORGANIZATION_ID" { type = string }
 
-
 // https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/scaleway.md
 // https://particule.io/blog/scaleway-externaldns/
 resource "kubernetes_deployment" "provider_scaleway" {
@@ -38,10 +37,11 @@ resource "kubernetes_deployment" "provider_scaleway" {
         automount_service_account_token = true
         container {
           name  = "external-dns"
-          image = "k8s.gcr.io/external-dns/external-dns:v0.7.4"
+          image = "k8s.gcr.io/external-dns/external-dns:v0.8.0"
           args = [
             "--source=service",
-            "--domain-filter=kube.default.me",
+            "--source=ingress",
+            "--domain-filter=90dy.me",
             "--provider=scaleway",
             "--namespace=default"
           ]

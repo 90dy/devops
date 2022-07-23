@@ -9,6 +9,8 @@ variable "SCW_ACCESS_KEY" { type = string }
 variable "SCW_SECRET_KEY" { type = string }
 variable "SCW_DEFAULT_ORGANIZATION_ID" { type = string }
 
+variable "CCXT_PORT" { type = string }
+
 terraform {
   backend "kubernetes" {
     secret_suffix    = "state"
@@ -24,6 +26,7 @@ module "namespace_default" {
   source              = "./namespaces/default"
   DOCKER_USERNAME     = var.DOCKER_USERNAME
   DOCKER_ACCESS_TOKEN = var.DOCKER_ACCESS_TOKEN
+  CCXT_PORT           = var.CCXT_PORT
 }
 
 module "provider_scaleway" {
@@ -36,4 +39,14 @@ module "provider_scaleway" {
   SCW_ACCESS_KEY              = var.SCW_ACCESS_KEY
   SCW_SECRET_KEY              = var.SCW_SECRET_KEY
   SCW_DEFAULT_ORGANIZATION_ID = var.SCW_DEFAULT_ORGANIZATION_ID
+}
+
+module "app_ccxt" {
+  source = "./apps/ccxt.90dy.me"
+
+  depends_on = [
+    module.namespace_default
+  ]
+
+  CCXT_PORT = var.CCXT_PORT
 }
