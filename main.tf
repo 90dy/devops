@@ -21,12 +21,16 @@ terraform {
 provider "kubernetes" {
   config_path = var.KUBE_CONFIG_PATH
 }
+provider "helm" {
+  kubernetes {
+    config_path = var.KUBE_CONFIG_PATH
+  }
+}
 
 module "namespace_default" {
   source              = "./namespaces/default"
   DOCKER_USERNAME     = var.DOCKER_USERNAME
   DOCKER_ACCESS_TOKEN = var.DOCKER_ACCESS_TOKEN
-  CCXT_PORT           = var.CCXT_PORT
 }
 
 module "provider_scaleway" {

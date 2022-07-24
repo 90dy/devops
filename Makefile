@@ -9,14 +9,18 @@ all: \
 scaleway scaleway.%: export SHELL := $(shell grep '[^\s#].*' .env.scaleway | xargs) $(SHELL)
 scaleway.init:
 	terraform init
+scaleway.upgrade:
+	terraform init -upgrade
 scaleway.deinit:
 	terraform deinit
 scaleway.apply:
 	terraform apply -auto-approve $(shell grep '[^\s#].*' .env.scaleway | sed 's,^,-var ,' | xargs)
 scaleway.destroy:
 	terraform destroy -auto-approve $(shell grep '[^\s#].*' .env.scaleway | sed 's,^,-var ,' | xargs)
+scaleway.shell:
+	$(SHELL)
 
 inspect.scaleway: inspect.%:
-	k9s --kubeconfig $*.k8s.yml
+	k9s --kubeconfig providers/$*/kubeconfig.yml
 
 inspect: inspect.scaleway

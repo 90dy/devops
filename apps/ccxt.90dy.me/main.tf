@@ -1,6 +1,33 @@
 # external-dns.alpha.kubernetes.io/hostname: my-app.example.com
 variable "CCXT_PORT" { type = string }
-
+resource "kubernetes_ingress_v1" "ccxt" {
+  metadata {
+    namespace = "default"
+    name      = "ccxt"
+  }
+  spec {
+    # tls {
+    # secret_name = "ingress-tls"
+    # }
+    rule {
+      host = "ccxt.90dy.me"
+      http {
+        path {
+          path      = "/"
+          path_type = "Prefix"
+          backend {
+            service {
+              name = "ccxt"
+              port {
+                name = "ccxt"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
 resource "kubernetes_service" "ccxt" {
   metadata {
     namespace = "default"
@@ -11,15 +38,13 @@ resource "kubernetes_service" "ccxt" {
   }
   spec {
     # type             = contains(["scaleway"], var.TARGET) ? "LoadBalancer" : "NodePort"
-    type             = "NodePort"
-    session_affinity = "ClientIP"
     selector = {
       app = "ccxt"
     }
     port {
       name        = "ccxt"
-      port        = var.CCXT_PORT
-      target_port = "ccxt"
+      port        = 80
+      target_port = 3000
     }
   }
 }
