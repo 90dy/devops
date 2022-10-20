@@ -1,5 +1,5 @@
 resource "helm_release" "traefik" {
-  namespace  = "default"
+  namespace  = "kube-system"
   name       = "traefik"
   repository = "https://helm.traefik.io/traefik"
   chart      = "traefik"

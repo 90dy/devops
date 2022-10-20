@@ -46,7 +46,7 @@ module "provider_scaleway" {
 }
 
 module "app_ccxt" {
-  source = "./apps/ccxt.90dy.me"
+  source = "./apps/ccxt"
 
   depends_on = [
     module.namespace_default

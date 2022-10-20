@@ -6,7 +6,7 @@ variable "SCW_DEFAULT_ORGANIZATION_ID" { type = string }
 resource "kubernetes_service_account" "external_dns" {
   metadata {
     name      = "external-dns"
-    namespace = "default"
+    namespace = "kube-system"
   }
   automount_service_account_token = true
 }
@@ -46,13 +46,13 @@ resource "kubernetes_cluster_role_binding" "external_dns" {
   subject {
     kind      = "ServiceAccount"
     name      = "external-dns"
-    namespace = "default"
+    namespace = "kube-system"
   }
 }
 
 resource "kubernetes_deployment" "external_dns" {
   metadata {
-    namespace = "default"
+    namespace = "kube-system"
     name      = "external-dns"
   }
 
@@ -71,7 +71,7 @@ resource "kubernetes_deployment" "external_dns" {
     }
     template {
       metadata {
-        namespace = "default"
+        namespace = "kube-system"
         labels = {
           name = "external-dns"
         }
