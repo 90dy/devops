@@ -43,7 +43,7 @@ resource "kubernetes_service" "ccxt" {
     }
     port {
       name        = "ccxt"
-      port        = 80
+      port        = var.CCXT_PORT
       target_port = 3000
     }
   }
