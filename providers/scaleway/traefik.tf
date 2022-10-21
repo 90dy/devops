@@ -29,10 +29,10 @@ resource "helm_release" "traefik" {
   #         enabled: true
   #   EOF
   # ]
-  set {
-    name  = "providers.kubernetesIngress.hostname"
-    value = "90dy.me"
-  }
+  # set {
+  #   name  = "providers.kubernetesIngress.hostname"
+  #   value = "90dy.me"
+  # }
   set {
     name  = "providers.kubernetesIngress.publishedService.enabled"
     value = true

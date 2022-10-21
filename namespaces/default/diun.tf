@@ -1,18 +1,21 @@
 
 resource "kubernetes_service_account" "diun" {
-  # depends_on = [kubernetes_namespace.default_namespace]
+  depends_on = [kubernetes_namespace.default, kubernetes_secret.default_docker_config]
   metadata {
     namespace = "default"
     name      = "diun"
   }
   automount_service_account_token = true
+  timeouts {
+    create = "2m"
+  }
   image_pull_secret {
     name = "docker-secret"
   }
 }
 
 resource "kubernetes_cluster_role" "diun" {
-  # depends_on = [kubernetes_namespace.default_namespace]
+  depends_on = [kubernetes_namespace.default]
   metadata {
     name = "diun"
   }
@@ -24,7 +27,7 @@ resource "kubernetes_cluster_role" "diun" {
 }
 
 resource "kubernetes_cluster_role_binding" "diun" {
-  # depends_on = [kubernetes_namespace.default_namespace]
+  depends_on = [kubernetes_service_account.diun, kubernetes_cluster_role.diun]
   metadata {
     name = "diun"
   }
@@ -41,11 +44,12 @@ resource "kubernetes_cluster_role_binding" "diun" {
 }
 
 resource "kubernetes_deployment" "diun" {
-  # depends_on = [kubernetes_namespace.default_namespace]
+  depends_on = [kubernetes_cluster_role_binding.diun]
   metadata {
     namespace = "default"
     name      = "diun"
   }
+
   spec {
     selector {
       match_labels = {
