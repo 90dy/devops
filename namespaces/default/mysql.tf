@@ -19,18 +19,18 @@ resource "kubernetes_manifest" "mysql" {
     kubernetes_namespace.default
   ]
   manifest = yamldecode(<<-EOF
-apiVersion: "traefik.containo.us/v1alpha1"
-kind: "IngressRouteTCP"
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
 metadata:
-  namespace: "default"
-  name: "mysql"
+  namespace: default
+  name: mysql
 spec:
-  entryPoints: ["mysql"]
+  entryPoints: [mysql]
   routes:
   - services:
-    - name: "mysql"
+    - name: mysql
       port: 3306
-    match: "HostSNI(`90dy.me`)"
+    match: HostSNI(`*`)
 		EOF
   )
 }
