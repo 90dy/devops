@@ -83,7 +83,7 @@ resource "kubernetes_deployment" "external_dns" {
           name  = "external-dns"
           image = "k8s.gcr.io/external-dns/external-dns:v0.12.0"
           args = [
-            # "--source=service",
+            "--source=service",
             "--source=ingress",
             "--domain-filter=90dy.me",
             "--provider=scaleway",

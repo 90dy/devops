@@ -34,7 +34,13 @@ resource "helm_release" "traefik" {
   #   value = "90dy.me"
   # }
   set {
+    # I think its useful for external-dns but not sure
     name  = "providers.kubernetesIngress.publishedService.enabled"
+    value = true
+  }
+  // Needed for IngressRouteTCP resource to be available in other namespaces
+  set {
+    name  = "providers.kubernetesCRD.allowCrossNamespace.enabled"
     value = true
   }
 }

@@ -20,7 +20,7 @@ scaleway.destroy:
 scaleway.shell:
 	$(SHELL)
 
-inspect.scaleway: inspect.%:
+scaleway.inspect: %.inspect:
 	k9s --kubeconfig providers/$*/kubeconfig.yml
 
-inspect: inspect.scaleway
+inspect: scaleway.inspect
