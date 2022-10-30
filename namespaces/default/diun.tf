@@ -1,4 +1,3 @@
-
 resource "kubernetes_service_account" "diun" {
   depends_on = [kubernetes_namespace.default, kubernetes_secret.default_docker_config]
   metadata {
@@ -13,7 +12,6 @@ resource "kubernetes_service_account" "diun" {
     name = "docker-secret"
   }
 }
-
 resource "kubernetes_cluster_role" "diun" {
   depends_on = [kubernetes_namespace.default]
   metadata {
@@ -25,7 +23,6 @@ resource "kubernetes_cluster_role" "diun" {
     verbs      = ["get", "watch", "list"]
   }
 }
-
 resource "kubernetes_cluster_role_binding" "diun" {
   depends_on = [kubernetes_service_account.diun, kubernetes_cluster_role.diun]
   metadata {
@@ -42,14 +39,12 @@ resource "kubernetes_cluster_role_binding" "diun" {
     namespace = "default"
   }
 }
-
 resource "kubernetes_deployment" "diun" {
   depends_on = [kubernetes_cluster_role_binding.diun]
   metadata {
     namespace = "default"
     name      = "diun"
   }
-
   spec {
     selector {
       match_labels = {
@@ -74,7 +69,6 @@ resource "kubernetes_deployment" "diun" {
           image             = "crazymax/diun:latest"
           image_pull_policy = "Always"
           args              = ["serve"]
-
           env {
             name  = "TZ"
             value = "Europe/Paris"
@@ -99,7 +93,6 @@ resource "kubernetes_deployment" "diun" {
             name  = "DIUN_PROVIDERS_KUBERNETES"
             value = "true"
           }
-
           volume_mount {
             name       = "data"
             mount_path = "/data"

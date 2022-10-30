@@ -29,5 +29,3 @@ autoscaling:
       - type: Pods
         value: 1
         periodSeconds: 60
-
-

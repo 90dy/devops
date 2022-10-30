@@ -29,8 +29,8 @@ provider "helm" {
 
 module "namespace_default" {
   source              = "./namespaces/default"
-  DOCKER_USERNAME     = var.DOCKER_USERNAME
-  DOCKER_ACCESS_TOKEN = var.DOCKER_ACCESS_TOKEN
+  username     = var.DOCKER_USERNAME
+  access_token = var.DOCKER_ACCESS_TOKEN
 }
 
 module "provider_scaleway" {
