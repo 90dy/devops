@@ -54,3 +54,13 @@ module "app_ccxt" {
 
   CCXT_PORT = var.CCXT_PORT
 }
+
+module "default_mysql" {
+	source = "./services/mysql"
+	depends_on = [
+		module.namespace_default
+	]
+	namespace = "default"
+	host = "90dy.me"
+	root_password = "yolo"
+}

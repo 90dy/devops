@@ -8,8 +8,6 @@ all: \
 # scaleway: $(eval export
 scaleway scaleway.%: export SHELL := $(shell grep '[^\s#].*' .env.scaleway | xargs) $(SHELL)
 scaleway.init:
-	terraform init
-scaleway.upgrade:
 	terraform init -upgrade
 scaleway.deinit:
 	terraform deinit
