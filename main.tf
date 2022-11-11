@@ -62,5 +62,5 @@ module "default_mysql" {
 	]
 	namespace = "default"
 	host = "90dy.me"
-	root_password = "yolo"
+	root_password = "password"
 }

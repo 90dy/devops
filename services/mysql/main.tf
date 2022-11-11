@@ -11,9 +11,12 @@ variable "host" {
 }
 variable "root_password" {
 	type = string
-	default = ""
+	default = "password"
+	validation {
+		condition = length(var.root_password) >= 8
+		error_message = "variable root_password should have 8 characters or more"
+	}
 }
-
 variable "min_replicas" {
 	type = number
 	default = 2
@@ -26,6 +29,7 @@ variable "storage_size" {
 	type = string
 	default = "1Gi"
 }
+
 # Permit external-dns to handle host
 resource "kubernetes_ingress_v1" "mysql" {
 	metadata {
@@ -35,6 +39,25 @@ resource "kubernetes_ingress_v1" "mysql" {
 	spec {
 		rule {
 			host = var.host
+		}
+		rule {
+			// admin interface
+			host = "maxscale.${var.host}"
+      http {
+        path {
+					path = "/"
+					path_type = "Prefix"
+          backend {
+            service {
+              name = "mysql"
+              port {
+                name = "maxscale-adm"
+              }
+            }
+          }
+          # path = "*"
+        }
+			}
 		}
 	}
 }
@@ -59,20 +82,33 @@ resource "kubernetes_manifest" "mysql" {
 # Headless service for stable DNS entries of StatefulSet members.
 resource "kubernetes_service" "mysql" {
 	depends_on = [
-		kubernetes_config_map.mariadb
+		kubernetes_config_map.mariadb,
+		kubernetes_stateful_set.mariadb
 	]
 	metadata {
 		namespace = var.namespace
 		name			= "mysql"
 	}
 	spec {
+		cluster_ip = "None"
+
+		selector = {
+			app = "mysql"
+		}
+		# port {
+		# 	name = "mariadb"
+		# 	port = 3306
+		# 	target_port = 3306
+		# }
 		port {
-			name = "maxscale"
+			name = "maxscale-rw"
 			port = 3306
 			target_port = 4008
 		}
-		selector = {
-			app = "mysql"
+		port {
+			name = "maxscale-adm"
+			port = 80
+			target_port = 8989
 		}
 	}
 }
@@ -82,10 +118,6 @@ resource "kubernetes_config_map" "mariadb" {
 	metadata {
 		namespace = var.namespace
 		name			= "mariadb"
-		annotations = {
-			"max_replicas" = "${var.max_replicas}"
-			"root_password": "${sha256(var.root_password)}"
-		}
 	}
 	data = {
 		"primary.cnf"	= <<-EOF
@@ -111,10 +143,10 @@ resource "kubernetes_config_map" "mariadb" {
 				<<-EOF
 					[mariadb-${id}]
 					type            = server
-					host            = mariadb-${id}.mysql
+					address         = mariadb-${id}.mysql
 					port            = 3306
 					protocol        = MariaDBBackend
-					serv_weight     = 1
+					rank            = ${id <= var.min_replicas ? "primary" : "secondary"}
 				EOF
 			])}
 
@@ -127,7 +159,10 @@ resource "kubernetes_config_map" "mariadb" {
 			log_augmentation        = 1
 			ms_timestamp            = 1
 			syslog                  = 1
+			log_debug               = 1
 			admin_enabled           = true
+			admin_host              = ::
+			admin_port              = 8989
 
 			#########################
 			# Monitor for the servers
@@ -136,7 +171,7 @@ resource "kubernetes_config_map" "mariadb" {
 			[monitor]
 			type                    = monitor
 			module                  = mariadbmon
-			servers         				= ${join(",", [for id in range(0, var.max_replicas) : "mariadb-${id}"])}
+			servers                 = ${join(",", [for id in range(0, var.max_replicas) : "mariadb-${id}"])}
 			user                    = root
 			password                = ${var.root_password}
 			auto_failover           = true
@@ -147,30 +182,33 @@ resource "kubernetes_config_map" "mariadb" {
 			## Service definitions for read/write splitting and read-only services.
 			#########################
 
-			[rw-service]
+			[read_write_split-service]
 			type            = service
 			router          = readwritesplit
 			servers         = ${join(",", [for id in range(0, var.max_replicas) : "mariadb-${id}"])}
 			user            = root
 			password        = ${var.root_password}
-			max_slave_connections           = 100%
+			enable_root_user                = true
+			max_connections                 = 0
 			max_sescmd_history              = 1500
 			causal_reads                    = true
-			causal_reads_timeout            = 10
+			# causal_reads_timeout            = 10
 			transaction_replay              = true
 			transaction_replay_max_size     = 1Mi
 			delayed_retry                   = true
 			master_reconnection             = true
 			master_failure_mode             = fail_on_write
-			max_slave_replication_lag       = 3
+			# master_accept_read              = ${var.min_replicas < 2 ? "true" : "false"}
+			# max_slave_replication_lag       = 3
 
-			[rr-service]
+			[round_robin-service]
 			type            = service
 			router          = readconnroute
 			servers         = ${join(",", [for id in range(0, var.max_replicas) : "mariadb-${id}"])}
 			router_options  = slave
 			user            = root
-			password        = ${var.root_password}
+			password        = "${var.root_password}"
+			enable_root_user                = true
 
 			##########################
 			## Listener definitions for the service
@@ -179,44 +217,49 @@ resource "kubernetes_config_map" "mariadb" {
 
 			[rw-listener]
 			type            = listener
-			service         = rw-service
+			service         = read_write_split-service
 			protocol        = MariaDBClient
+			address         = ::
 			port            = 4008
 
 			[ro-listener]
 			type            = listener
-			service         = rr-service
+			service         = round_robin-service
 			protocol        = MariaDBClient
+			address         = ::
 			port            = 4006
 		EOF
 	}
 }
 resource "kubernetes_stateful_set" "mariadb" {
 	depends_on = [
-		kubernetes_service.mysql,
 		kubernetes_config_map.mariadb,
 	]
 	metadata {
 		namespace = var.namespace
 		name			= "mariadb"
+
 		labels = {
 			"app" = "mysql"
 		}
 	}
 	spec {
 		service_name = "mysql"
+		pod_management_policy = "Parallel"
 		replicas		 = var.min_replicas
 		selector {
 			match_labels = {
 				"app" = "mysql"
 			}
 		}
+
 		template {
 			metadata {
 				labels = {
 					app = "mysql"
 				}
 			}
+
 			spec {
 				init_container {
 					name	= "init-mariadb"
@@ -295,9 +338,18 @@ resource "kubernetes_stateful_set" "mariadb" {
 				container {
 					name	= "maxscale"
 					image = "mariadb/maxscale:22.08.2"
+					env {
+							// make config map changes recreate stateful set
+							name = "MAXSCALE_CNF_SHA256"
+							value = "${sha256(kubernetes_config_map.mariadb.data["maxscale.cnf"])}"
+					}
 					port {
-						name					 = "maxscale"
-						container_port = 4008
+						name						= "maxscale-rw"
+						container_port	= 4008
+					}
+					port {
+						name						= "maxscale-adm"
+						container_port	= 8989
 					}
 					volume_mount {
 						name = "config-map"
@@ -416,7 +468,7 @@ resource "kubernetes_stateful_set" "mariadb" {
 								&& rm -rf /var/lib/{apt,dpkg,cache,log}/
 
 	 						echo "Start a server to send backups when requested by peers."
-	 						exec ncat --listen --keep-open --send-only --max-conns=1 3307 -c \
+	 						exec /usr/bin/ncat --listen --keep-open --send-only --max-conns=1 3307 -c \
 	 						 "mariabackup --backup --slave-info --stream=xbstream --socket=/run/mysqld/mysqld.sock --user='root'"
 						EOF
 					]
